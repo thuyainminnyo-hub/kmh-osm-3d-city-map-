@@ -42,6 +42,7 @@
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 const canvas=document.querySelector('#scene'),statusTitle=document.querySelector('#statusTitle'),statusText=document.querySelector('#statusText'),loadBtn=document.querySelector('#load'),empty=document.querySelector('#empty');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(canvas.clientWidth,canvas.clientHeight,false);
 const scene=new THREE.Scene();scene.background=new THREE.Color('#0b1423');scene.fog=new THREE.Fog('#0b1423',180,650);
@@ -160,6 +161,8 @@ document.querySelector('#load').addEventListener('click',async()=>{
   const buildingMat=new THREE.MeshStandardMaterial({color:'#69bcae',roughness:.8,metalness:.05});
   const roadMat=new THREE.MeshStandardMaterial({color:'#5e6670',roughness:.98,metalness:0});
   const outlineMat=new THREE.LineBasicMaterial({color:'#c7fff2',transparent:true,opacity:.45});
+  // Batch road segments by road class to reduce thousands of individual draw calls on phones.
+  const roadGeometryBatches=new Map();
   for(const way of ways){const tags=way.tags||{},pts=Array.isArray(way.geometry)?way.geometry.filter(n=>Number.isFinite(n.lat)&&Number.isFinite(n.lon)):((way.nodes||[]).map(id=>nodes.get(id)).filter(Boolean));if(pts.length<2)continue;
    const isBuilding=!!tags.building&&pts.length>=4&&((way.geometry&&Math.abs(pts[0].lat-pts[pts.length-1].lat)<1e-8&&Math.abs(pts[0].lon-pts[pts.length-1].lon)<1e-8)||(way.nodes&&way.nodes[0]===way.nodes[way.nodes.length-1]));
    if(isBuilding){const shape=new THREE.Shape();pts.forEach((n,i)=>{const p=xy(n);if(i===0)shape.moveTo(p.x,p.z);else shape.lineTo(p.x,p.z)});shape.closePath();
@@ -172,10 +175,13 @@ document.querySelector('#load').addEventListener('click',async()=>{
     for(let i=0;i<pts.length-1;i++){
       const a=xy(pts[i]),b=xy(pts[i+1]),dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz);
       if(len<0.15)continue;
-      const road=new THREE.Mesh(new THREE.BoxGeometry(len,0.24,roadWidth),roadMat.clone());
-      road.position.set((a.x+b.x)/2,0.12,(a.z+b.z)/2);
-      road.rotation.y=-Math.atan2(dz,dx);
-      road.userData.kmhKind='road';road.userData.kmhRoadClass=highway;road.castShadow=false;road.receiveShadow=true;root.add(road);
+      const segmentGeometry=new THREE.BoxGeometry(len,0.24,roadWidth);
+      const transform=new THREE.Matrix4();
+      const rotation=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),-Math.atan2(dz,dx));
+      transform.compose(new THREE.Vector3((a.x+b.x)/2,0.12,(a.z+b.z)/2),rotation,new THREE.Vector3(1,1,1));
+      segmentGeometry.applyMatrix4(transform);
+      if(!roadGeometryBatches.has(highway))roadGeometryBatches.set(highway,[]);
+      roadGeometryBatches.get(highway).push(segmentGeometry);
     }
     // Add a limited number of readable floating labels for named main streets.
     const roadName=String(tags.name||tags['name:en']||'').trim();
@@ -196,6 +202,16 @@ document.querySelector('#load').addEventListener('click',async()=>{
     }
     roads++;
    }
+  }
+  // One mesh per highway class instead of one mesh per road segment.
+  for(const [roadClass,geometries] of roadGeometryBatches){
+    if(!geometries.length)continue;
+    const merged=mergeGeometries(geometries,false);
+    geometries.forEach(geometry=>geometry.dispose());
+    if(!merged)continue;
+    const roadMesh=new THREE.Mesh(merged,roadMat.clone());
+    roadMesh.userData.kmhKind='road';roadMesh.userData.kmhRoadClass=roadClass;
+    roadMesh.castShadow=false;roadMesh.receiveShadow=true;root.add(roadMesh);
   }
   if(buildings===0&&roads===0)throw new Error('Data arrived, but no renderable buildings or roads were found. Try a nearby area.');
   applyStyle();
