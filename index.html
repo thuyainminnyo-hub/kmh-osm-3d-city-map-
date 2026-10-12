@@ -57,7 +57,7 @@ function clearRoot(){while(root.children.length){const o=root.children.pop();o.g
 function val(id){return Number(document.querySelector('#'+id).value)}
 document.querySelector('#preset').addEventListener('change',e=>{if(e.target.value==='yangon'){document.querySelector('#south').value='16.770';document.querySelector('#north').value='16.780';document.querySelector('#west').value='96.150';document.querySelector('#east').value='96.160';document.querySelector('#areaLabel').textContent='Yangon sample area'}else document.querySelector('#areaLabel').textContent='Custom area'});
 for(const id of ['south','north','west','east'])document.querySelector('#'+id).addEventListener('input',()=>{document.querySelector('#preset').value='custom';document.querySelector('#areaLabel').textContent='Custom area'});
-function fitCamera(size){controls.target.set(0,0,0);const d=Math.max(size*1.2,35);camera.position.set(d*.8,d*.85,d*.95);camera.near=.1;camera.far=Math.max(3000,d*12);camera.updateProjectionMatrix();controls.update()}
+function fitCamera(size){controls.target.set(0,0,0);const d=Math.max(size*1.2,35);camera.position.set(d*.8,d*.85,d*.95);camera.near=.1;camera.far=Math.max(5000,d*15);scene.fog.near=Math.max(100,d*.35);scene.fog.far=Math.max(8000,d*8);camera.updateProjectionMatrix();controls.update()}
 document.querySelector('#reset').addEventListener('click',()=>fitCamera(window._kmhSize||150));
 document.querySelector('#load').addEventListener('click',async()=>{
  const south=val('south'),north=val('north'),west=val('west'),east=val('east');
