@@ -155,7 +155,7 @@ document.querySelector('#load').addEventListener('click',async()=>{
   const nodes=new Map(data.elements.filter(e=>e.type==='node'&&Number.isFinite(e.lat)&&Number.isFinite(e.lon)).map(n=>[n.id,n]));
   const ways=data.elements.filter(e=>e.type==='way'&&(Array.isArray(e.geometry)||Array.isArray(e.nodes)));
   if(!ways.length)throw new Error('No building or road ways were returned. Try another nearby bounding box.');
-  clearRoot();let buildings=0,roads=0;const latMid=(south+north)/2,scaleX=111320*Math.cos(latMid*Math.PI/180),scaleZ=111320;
+  clearRoot();let buildings=0,roads=0,roadLabels=0;const latMid=(south+north)/2,scaleX=111320*Math.cos(latMid*Math.PI/180),scaleZ=111320;
   const xy=n=>({x:(n.lon-(west+east)/2)*scaleX,z:-((n.lat-(south+north)/2)*scaleZ)});
   const buildingMat=new THREE.MeshStandardMaterial({color:'#69bcae',roughness:.8,metalness:.05});
   const roadMat=new THREE.MeshStandardMaterial({color:'#5e6670',roughness:.98,metalness:0});
@@ -176,6 +176,23 @@ document.querySelector('#load').addEventListener('click',async()=>{
       road.position.set((a.x+b.x)/2,0.12,(a.z+b.z)/2);
       road.rotation.y=-Math.atan2(dz,dx);
       road.userData.kmhKind='road';road.userData.kmhRoadClass=highway;road.castShadow=false;road.receiveShadow=true;root.add(road);
+    }
+    // Add a limited number of readable floating labels for named main streets.
+    const roadName=String(tags.name||tags['name:en']||'').trim();
+    const labelRoadTypes=['motorway','trunk','primary','secondary','tertiary','residential','unclassified'];
+    if(roadName&&labelRoadTypes.includes(highway)&&roadLabels<24){
+      const mid=xy(pts[Math.floor(pts.length/2)]);
+      const labelCanvas=document.createElement('canvas');labelCanvas.width=512;labelCanvas.height=96;
+      const ctx=labelCanvas.getContext('2d');
+      ctx.fillStyle='rgba(8,18,30,0.86)';ctx.beginPath();ctx.roundRect(8,8,496,80,18);ctx.fill();
+      ctx.strokeStyle=currentStyle==='realistic'?'rgba(255,255,255,.55)':'rgba(105,224,193,.8)';ctx.lineWidth=3;ctx.stroke();
+      ctx.font='bold 34px system-ui, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#ffffff';
+      let displayName=roadName;if(displayName.length>27)displayName=displayName.slice(0,26)+'…';
+      ctx.fillText(displayName,256,48,460);
+      const texture=new THREE.CanvasTexture(labelCanvas);texture.colorSpace=THREE.SRGBColorSpace;
+      const label=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false}));
+      label.position.set(mid.x,5,mid.z);label.scale.set(Math.max(18,Math.min(44,displayName.length*1.15)),Math.max(3.8,Math.min(6.5,displayName.length*.17)),1);
+      label.renderOrder=5;label.userData.kmhKind='road-label';root.add(label);roadLabels++;
     }
     roads++;
    }
