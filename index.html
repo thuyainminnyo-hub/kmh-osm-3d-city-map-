@@ -12,7 +12,31 @@
 <div class="status" role="status" aria-live="polite"><strong id="statusTitle">Ready</strong><span id="statusText">Tap “Load OSM data & build 3D” to fetch buildings and roads through the Netlify Function.</span></div><p class="tiny">Data © OpenStreetMap contributors. Experimental preview; upstream service limits and availability apply.</p>
 </aside><main class="viewport"><canvas id="scene"></canvas><div class="overlay"><span class="pill" id="areaLabel">Yangon sample area</span><span class="pill" id="counts">Buildings 0 · Roads 0</span></div><div class="empty" id="empty"><div><strong>KMH 3D City Preview</strong>Load an area to generate a simple 3D model from OpenStreetMap ways.</div></div><div class="bottom"><span class="legend">Drag to orbit · Scroll/pinch to zoom</span><span class="legend">Buildings · Roads</span></div></main></div>
 <script type="importmap">
-{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script>
+(function(){
+  const title=()=>document.querySelector('#statusTitle');
+  const body=()=>document.querySelector('#statusText');
+  function report(t,m){if(title())title().textContent=t;if(body())body().textContent=m;}
+  window.addEventListener('error',function(e){
+    const msg=e.message||(e.target&&e.target.src?'Could not load script: '+e.target.src:'A JavaScript resource failed to load.');
+    report('JavaScript / 3D engine error',msg);
+  });
+  window.addEventListener('unhandledrejection',function(e){
+    const reason=e.reason&&e.reason.message?e.reason.message:String(e.reason||'Unknown promise error');
+    report('3D engine error',reason);
+  });
+  document.addEventListener('DOMContentLoaded',function(){
+    const b=document.querySelector('#load');
+    if(!b)return;
+    b.addEventListener('click',function(){
+      if(title()&&title().textContent==='Ready'){
+        report('Checking 3D engine…','Button tap detected. Waiting for the map module to start. If this message remains, reload the page and check the reported engine error.');
+      }
+    });
+  });
+})();
 </script>
 <script type="module">
 import * as THREE from 'three';
