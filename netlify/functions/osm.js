@@ -40,17 +40,13 @@ exports.handler = async (event) => {
   const bbox = `${south},${west},${north},${east}`;
   const query = `[out:json][timeout:15];(way["building"](${bbox});way["highway"](${bbox}););out geom qt;`;
   const errors = [];
+  const timeoutMs = 8000;
 
-  // Stay within serverless function execution limits: each upstream gets a short timeout.
-  const startedAt = Date.now();
-  const totalBudgetMs = 18500;
-  for (const endpoint of OVERPASS_ENDPOINTS) {
-    if (Date.now() - startedAt >= totalBudgetMs) {
-      errors.push("Remaining upstream attempts skipped to stay within the function time budget");
-      break;
-    }
+  // Query mirrors in parallel so one slow public endpoint does not consume
+  // the time needed to try the others within a serverless function.
+  const attempts = OVERPASS_ENDPOINTS.map(async (endpoint) => {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 6000);
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(endpoint, {
         method: "POST",
@@ -63,24 +59,32 @@ exports.handler = async (event) => {
         signal: controller.signal
       });
       if (!response.ok) {
-        errors.push(`${new URL(endpoint).hostname}: HTTP ${response.status}`);
-        continue;
+        throw new Error(`${new URL(endpoint).hostname}: HTTP ${response.status}`);
       }
       const data = await response.json();
       if (!data || !Array.isArray(data.elements)) {
-        errors.push(`${new URL(endpoint).hostname}: invalid response`);
-        continue;
+        throw new Error(`${new URL(endpoint).hostname}: invalid response`);
       }
-      return json(200, data);
+      return data;
     } catch (error) {
-      errors.push(`${new URL(endpoint).hostname}: ${error.name === "AbortError" ? "timed out after 6 seconds" : `network/JSON error (${error.message || "unknown"})`}`);
+      const hostname = new URL(endpoint).hostname;
+      const message = error.name === "AbortError"
+        ? `timed out after ${timeoutMs / 1000} seconds`
+        : (error.message || "network/JSON error");
+      errors.push(`${hostname}: ${message}`);
+      throw error;
     } finally {
       clearTimeout(timer);
     }
-  }
-
-  return json(502, {
-    error: "All Overpass endpoints failed. Retry later or choose a smaller area.",
-    details: errors
   });
+
+  try {
+    const data = await Promise.any(attempts);
+    return json(200, data);
+  } catch {
+    return json(502, {
+      error: "All Overpass endpoints failed. Public OSM servers may be busy; retry later or select a smaller area.",
+      details: errors
+    });
+  }
 };
