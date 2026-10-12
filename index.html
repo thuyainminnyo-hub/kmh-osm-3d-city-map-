@@ -65,7 +65,7 @@ function applyStyle(){
     if(object.userData.kmhKind==='building'&&object.material&&object.material.color){
       object.material.color.set(buildingColors[(object.userData.kmhIndex||0)%buildingColors.length]);
       object.material.roughness=realistic ? 0.92 : 0.8;object.material.metalness=realistic ? 0 : 0.05;
-    }else if(object.userData.kmhKind==='road'&&object.material){object.material.color.set(realistic?'#59616a':'#f2b968');object.material.opacity=realistic?1:.9;}
+    }else if(object.userData.kmhKind==='road'&&object.material){const cls=object.userData.kmhRoadClass||'residential';const realRoad=({motorway:'#414850',trunk:'#4b535b',primary:'#59616a',secondary:'#69727b',tertiary:'#7b838a',residential:'#92999e',unclassified:'#92999e',service:'#a5abae',footway:'#c4bfae',path:'#b8b39f',track:'#a9a18d',cycleway:'#7d9e9a'})[cls]||'#92999e';const planRoad=({motorway:'#f08a57',trunk:'#f29a62',primary:'#f2b968',secondary:'#e5c77d',tertiary:'#a8d7ca',residential:'#77bdb1',unclassified:'#77bdb1',service:'#5c9e96',footway:'#c7fff2',path:'#c7fff2',track:'#d4c39a',cycleway:'#b8f0dd'})[cls]||'#77bdb1';object.material.color.set(realistic?realRoad:planRoad);object.material.opacity=realistic?1:.96;}
     else if(object.userData.kmhKind==='outline'&&object.material){object.material.color.set(realistic?'#ffffff':'#c7fff2');object.material.opacity=realistic?.18:.45;}
   });
 }
@@ -175,7 +175,7 @@ document.querySelector('#load').addEventListener('click',async()=>{
       const road=new THREE.Mesh(new THREE.BoxGeometry(len,0.24,roadWidth),roadMat.clone());
       road.position.set((a.x+b.x)/2,0.12,(a.z+b.z)/2);
       road.rotation.y=-Math.atan2(dz,dx);
-      road.userData.kmhKind='road';road.castShadow=false;road.receiveShadow=true;root.add(road);
+      road.userData.kmhKind='road';road.userData.kmhRoadClass=highway;road.castShadow=false;road.receiveShadow=true;root.add(road);
     }
     roads++;
    }
