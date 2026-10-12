@@ -5,7 +5,7 @@
 </style></head><body>
 <header><h1>KMH · OpenStreetMap → 3D City Map</h1><p>Mobile-first city preview · OpenStreetMap data · Three.js</p></header>
 <div class="layout"><aside class="controls">
-<div class="field"><label for="preset">Area preset</label><select id="preset"><option value="yangon">Yangon · sample area</option><option value="custom">Custom bounding box</option></select></div>
+<div class="field"><label for="preset">Area preset</label><select id="preset"><option value="yangon">Yangon · sample area</option><option value="mandalay">Mandalay · city sample</option><option value="taunggyi">Taunggyi · city sample</option><option value="naypyidaw">Naypyidaw · city sample</option><option value="bagan">Bagan · heritage sample</option><option value="custom">Custom bounding box</option></select></div>
 <div class="grid"><div class="field"><label for="south">South latitude</label><input id="south" type="number" step="0.001" value="16.770"></div><div class="field"><label for="north">North latitude</label><input id="north" type="number" step="0.001" value="16.780"></div><div class="field"><label for="west">West longitude</label><input id="west" type="number" step="0.001" value="96.150"></div><div class="field"><label for="east">East longitude</label><input id="east" type="number" step="0.001" value="96.160"></div></div>
 <button id="load">Load OSM data & build 3D</button><button class="secondary" id="reset">Reset camera</button>
 <p class="hint">Keep the area small. The proxy accepts no more than 0.03° per side to protect the public endpoint.</p>
@@ -55,7 +55,15 @@ function animate(){requestAnimationFrame(animate);controls.update();renderer.ren
 function setStatus(title,msg){statusTitle.textContent=title;statusText.textContent=msg}
 function clearRoot(){while(root.children.length){const o=root.children.pop();o.geometry?.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose()}}
 function val(id){return Number(document.querySelector('#'+id).value)}
-document.querySelector('#preset').addEventListener('change',e=>{if(e.target.value==='yangon'){document.querySelector('#south').value='16.770';document.querySelector('#north').value='16.780';document.querySelector('#west').value='96.150';document.querySelector('#east').value='96.160';document.querySelector('#areaLabel').textContent='Yangon sample area'}else document.querySelector('#areaLabel').textContent='Custom area'});
+const AREA_PRESETS={
+ yangon:{south:16.770,north:16.780,west:96.150,east:96.160,label:'Yangon sample area'},
+ mandalay:{south:21.953,north:21.963,west:96.084,east:96.094,label:'Mandalay city sample'},
+ taunggyi:{south:20.784,north:20.794,west:97.033,east:97.043,label:'Taunggyi city sample'},
+ naypyidaw:{south:19.758,north:19.768,west:96.073,east:96.083,label:'Naypyidaw city sample'},
+ bagan:{south:21.166,north:21.176,west:94.853,east:94.863,label:'Bagan heritage sample'}
+};
+function selectPreset(name){const area=AREA_PRESETS[name];if(!area){document.querySelector('#areaLabel').textContent='Custom area';return}for(const key of ['south','north','west','east'])document.querySelector('#'+key).value=area[key].toFixed(3);document.querySelector('#areaLabel').textContent=area.label}
+document.querySelector('#preset').addEventListener('change',e=>selectPreset(e.target.value));
 for(const id of ['south','north','west','east'])document.querySelector('#'+id).addEventListener('input',()=>{document.querySelector('#preset').value='custom';document.querySelector('#areaLabel').textContent='Custom area'});
 function fitCamera(size){controls.target.set(0,0,0);const d=Math.max(size*1.2,35);camera.position.set(d*.8,d*.85,d*.95);camera.near=.1;camera.far=Math.max(5000,d*15);scene.fog.near=Math.max(100,d*.35);scene.fog.far=Math.max(8000,d*8);camera.updateProjectionMatrix();controls.update()}
 document.querySelector('#reset').addEventListener('click',()=>fitCamera(window._kmhSize||150));
