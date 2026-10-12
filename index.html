@@ -136,15 +136,24 @@ document.querySelector('#load').addEventListener('click',async()=>{
  loadBtn.disabled=true;empty.style.display='grid';setStatus('Loading…','Requesting OpenStreetMap data through the Netlify Function.');
  try{
   const url='/.netlify/functions/osm?'+new URLSearchParams({south:south,west:west,north:north,east:east});
-  const response=await fetch(url,{headers:{Accept:'application/json'}});
-  const raw=await response.text();
-  let data;
-  try{data=JSON.parse(raw)}catch(parseError){
-    const preview=raw.replace(/\\s+/g,' ').slice(0,180);
-    throw new Error('Expected JSON from '+response.url+' but received HTML/text (HTTP '+response.status+'). Preview: '+preview);
+  const cacheKey='kmh-osm-v1:'+ [south,west,north,east].map(v=>v.toFixed(6)).join(',');
+  let data,usedCache=false,cacheAgeHours=0;
+  try{
+    const response=await fetch(url,{headers:{Accept:'application/json'}});
+    const raw=await response.text();
+    try{data=JSON.parse(raw)}catch(parseError){
+      const preview=raw.replace(/\\s+/g,' ').slice(0,180);
+      throw new Error('Expected JSON from '+response.url+' but received HTML/text (HTTP '+response.status+'). Preview: '+preview);
+    }
+    if(!response.ok)throw new Error((data.error||'Proxy request failed')+(data.details?' — '+data.details.join('; '):''));
+    if(!Array.isArray(data.elements))throw new Error('The proxy returned an unexpected response.');
+    try{localStorage.setItem(cacheKey,JSON.stringify({savedAt:Date.now(),data}));}catch(cacheError){}
+  }catch(liveError){
+    let cached=null;
+    try{cached=JSON.parse(localStorage.getItem(cacheKey)||'null')}catch(cacheError){}
+    if(!cached||!cached.data||!Array.isArray(cached.data.elements)||!Number.isFinite(cached.savedAt))throw liveError;
+    data=cached.data;usedCache=true;cacheAgeHours=Math.max(0,Math.round((Date.now()-cached.savedAt)/3600000));
   }
-  if(!response.ok)throw new Error((data.error||'Proxy request failed')+(data.details?' — '+data.details.join('; '):''));
-  if(!Array.isArray(data.elements))throw new Error('The proxy returned an unexpected response.');
   const nodes=new Map(data.elements.filter(e=>e.type==='node'&&Number.isFinite(e.lat)&&Number.isFinite(e.lon)).map(n=>[n.id,n]));
   const ways=data.elements.filter(e=>e.type==='way'&&(Array.isArray(e.geometry)||Array.isArray(e.nodes)));
   if(!ways.length)throw new Error('No building or road ways were returned. Try another nearby bounding box.');
@@ -165,7 +174,7 @@ document.querySelector('#load').addEventListener('click',async()=>{
   applyStyle();
   const size=Math.max((east-west)*scaleX,(north-south)*scaleZ);window._kmhSize=size;fitCamera(size);
   document.querySelector('#counts').textContent='Buildings '+buildings+' · Roads '+roads;empty.style.display='none';
-  setStatus('3D scene built','Received '+data.elements.length+' OSM elements. Rendered '+buildings+' buildings and '+roads+' road segments.');
+  setStatus(usedCache?'Cached OSM scene loaded':'3D scene built',usedCache?'Live OSM servers were unavailable. Showing previously saved real OSM data for this exact area ('+cacheAgeHours+' hours old). Rendered '+buildings+' buildings and '+roads+' road segments.':'Received '+data.elements.length+' OSM elements. Rendered '+buildings+' buildings and '+roads+' road segments. A successful response is cached on this device for future server outages.');
  }catch(err){const reason=err.message||'Unknown error.';document.querySelector('#demo').click();setStatus('OSM unavailable · Demo fallback','Live OpenStreetMap request failed: '+reason+' Showing synthetic demo buildings and roads instead; these are not real OSM data. You can retry the OSM button later.')}finally{loadBtn.disabled=false}
 });
 </script></body></html>
