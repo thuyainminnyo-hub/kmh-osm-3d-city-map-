@@ -1,6 +1,7 @@
 const OVERPASS_ENDPOINTS = [
   "https://overpass-api.de/api/interpreter",
-  "https://overpass.private.coffee/api/interpreter"
+  "https://overpass.private.coffee/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter"
 ];
 
 const json = (statusCode, body) => ({
@@ -48,7 +49,8 @@ exports.handler = async (event) => {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-          "Accept": "application/json"
+          "Accept": "application/json",
+          "User-Agent": "KMH-OSM-3D-City-Map/1.0 (bounded-area preview)"
         },
         body: new URLSearchParams({ data: query }).toString(),
         signal: controller.signal
