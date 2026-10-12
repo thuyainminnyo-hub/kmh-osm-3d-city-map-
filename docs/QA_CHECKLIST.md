@@ -22,6 +22,7 @@ Use this checklist after a source change and again after a successful production
 - [ ] Select Yangon and tap **Load OSM data & build 3D**.
 - [ ] Confirm the status distinguishes a live OSM scene from a cached scene or demo fallback.
 - [ ] Confirm building and road counts are non-zero for a suitable sample area.
+- [ ] Confirm road segments are batched by highway class and mobile orbit/zoom remains responsive.
 - [ ] Confirm the status reports the number of named street labels actually created.
 - [ ] Check whether street labels are readable and do not obscure the entire scene.
 - [ ] Switch between **Realistic 3D City** and **City Planning Model** without reloading data.
@@ -71,7 +72,7 @@ Record after testing:
 
 ## Current known deployment state (2026-10-12)
 
-- Latest GitHub commit at the time of this record: `a0137227ebd6f576f61a35b1e67c09b0ac0c234c`.
+- Latest verified source update at the time of this record: `874c3aefdbc80b346f01f1e21ad069818e07c00e` (road geometry batching for mobile performance).
 - Netlify skipped that deploy because account credits were exhausted.
 - Production remained on `b18d9a26d2ffbff5158af8156df7a76ba40c5cd8`.
 - The latest street-label size and label-count status update must be verified after credits resume.
