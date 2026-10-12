@@ -38,12 +38,19 @@ exports.handler = async (event) => {
   }
 
   const bbox = `${south},${west},${north},${east}`;
-  const query = `[out:json][timeout:20];(way["building"](${bbox});way["highway"](${bbox}););out body;>;out skel qt;`;
+  const query = `[out:json][timeout:12];(way["building"](${bbox});way["highway"](${bbox}););out body;>;out skel qt;`;
   const errors = [];
 
+  // Stay within serverless function execution limits: each upstream gets a short timeout.
+  const startedAt = Date.now();
+  const totalBudgetMs = 18500;
   for (const endpoint of OVERPASS_ENDPOINTS) {
+    if (Date.now() - startedAt >= totalBudgetMs) {
+      errors.push("Remaining upstream attempts skipped to stay within the function time budget");
+      break;
+    }
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 22000);
+    const timer = setTimeout(() => controller.abort(), 6000);
     try {
       const response = await fetch(endpoint, {
         method: "POST",
@@ -66,7 +73,7 @@ exports.handler = async (event) => {
       }
       return json(200, data);
     } catch (error) {
-      errors.push(`${new URL(endpoint).hostname}: ${error.name === "AbortError" ? "timeout" : "network error"}`);
+      errors.push(`${new URL(endpoint).hostname}: ${error.name === "AbortError" ? "timed out after 6 seconds" : `network/JSON error (${error.message || "unknown"})`}`);
     } finally {
       clearTimeout(timer);
     }
