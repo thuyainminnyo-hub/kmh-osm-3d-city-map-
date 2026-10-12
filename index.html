@@ -74,7 +74,7 @@ applyStyle();
 function resize(){const w=canvas.clientWidth||innerWidth,h=canvas.clientHeight||500;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}new ResizeObserver(resize).observe(canvas);resize();
 function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera)}animate();
 function setStatus(title,msg){statusTitle.textContent=title;statusText.textContent=msg}
-function clearRoot(){while(root.children.length){const o=root.children.pop();o.geometry?.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose()}}
+function clearRoot(){while(root.children.length){const o=root.children[0];root.remove(o);o.traverse?.(child=>{child.geometry?.dispose();if(Array.isArray(child.material))child.material.forEach(m=>m.dispose());else child.material?.dispose()});if(!o.traverse){o.geometry?.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose()}}}
 function val(id){return Number(document.querySelector('#'+id).value)}
 const AREA_PRESETS={
  yangon:{south:16.770,north:16.780,west:96.150,east:96.160,label:'Yangon sample area'},
@@ -166,6 +166,6 @@ document.querySelector('#load').addEventListener('click',async()=>{
   const size=Math.max((east-west)*scaleX,(north-south)*scaleZ);window._kmhSize=size;fitCamera(size);
   document.querySelector('#counts').textContent='Buildings '+buildings+' · Roads '+roads;empty.style.display='none';
   setStatus('3D scene built','Received '+data.elements.length+' OSM elements. Rendered '+buildings+' buildings and '+roads+' road segments.');
- }catch(err){setStatus('Pipeline failed',err.message||'Unknown error.');empty.style.display='grid'}finally{loadBtn.disabled=false}
+ }catch(err){const reason=err.message||'Unknown error.';document.querySelector('#demo').click();setStatus('OSM unavailable · Demo fallback','Live OpenStreetMap request failed: '+reason+' Showing synthetic demo buildings and roads instead; these are not real OSM data. You can retry the OSM button later.')}finally{loadBtn.disabled=false}
 });
 </script></body></html>
