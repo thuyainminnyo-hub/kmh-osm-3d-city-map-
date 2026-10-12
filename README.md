@@ -21,9 +21,9 @@ A mobile-first Three.js web app that loads a bounded OpenStreetMap area and rend
 
 ## Current deployment status (2026-10-12)
 
-The latest GitHub commit is `a0137227ebd6f576f61a35b1e67c09b0ac0c234c` ("Make 3D road labels easier to see and report label count"). Netlify marked this deploy as **skipped due to account credit usage exceeded**.
+The latest road-label update is followed by a GitHub source improvement, `874c3aefdbc80b346f01f1e21ad069818e07c00e` ("Batch OSM road geometry to improve mobile rendering performance"). It batches road segments by highway class to reduce individual mesh/draw-call overhead. This source improvement has **not** been verified on the live production site because Netlify production deploys were paused for exhausted credits.
 
-The currently published production version is commit `b18d9a26d2ffbff5158af8156df7a76ba40c5cd8` ("Add readable labels for named main roads in 3D scenes"). The live site remains published, but the latest label-size/status-count change is not live yet.
+The currently known published production version is commit `b18d9a26d2ffbff5158af8156df7a76ba40c5cd8` ("Add readable labels for named main roads in 3D scenes"). The live site remains published, but the latest label-size/status-count change is not live yet.
 
 **Do not assume a GitHub commit is deployed.** After the Netlify billing cycle resets or credits are otherwise restored:
 1. Open the Netlify deploy dashboard.
