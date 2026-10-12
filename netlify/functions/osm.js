@@ -38,7 +38,7 @@ exports.handler = async (event) => {
   }
 
   const bbox = `${south},${west},${north},${east}`;
-  const query = `[out:json][timeout:12];(way["building"](${bbox});way["highway"](${bbox}););out body;>;out skel qt;`;
+  const query = `[out:json][timeout:15];(way["building"](${bbox});way["highway"](${bbox}););out geom qt;`;
   const errors = [];
 
   // Stay within serverless function execution limits: each upstream gets a short timeout.
