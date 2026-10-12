@@ -64,7 +64,7 @@ function applyStyle(){
   root.traverse(object=>{
     if(object.userData.kmhKind==='building'&&object.material&&object.material.color){
       object.material.color.set(buildingColors[(object.userData.kmhIndex||0)%buildingColors.length]);
-      object.material.roughness=realistic?.92:.8;object.material.metalness=realistic?0:.05;
+      object.material.roughness=realistic ? 0.92 : 0.8;object.material.metalness=realistic ? 0 : 0.05;
     }else if(object.userData.kmhKind==='road'&&object.material){object.material.color.set(realistic?'#626d78':'#f2b968');object.material.opacity=realistic?1:.82;}
     else if(object.userData.kmhKind==='outline'&&object.material){object.material.color.set(realistic?'#ffffff':'#c7fff2');object.material.opacity=realistic?.18:.45;}
   });
