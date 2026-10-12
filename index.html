@@ -66,7 +66,13 @@ document.querySelector('#load').addEventListener('click',async()=>{
  loadBtn.disabled=true;empty.style.display='grid';setStatus('Loading…','Requesting OpenStreetMap data through the Netlify Function.');
  try{
   const url='/.netlify/functions/osm?'+new URLSearchParams({south:south,west:west,north:north,east:east});
-  const response=await fetch(url,{headers:{Accept:'application/json'}});const data=await response.json();
+  const response=await fetch(url,{headers:{Accept:'application/json'}});
+  const raw=await response.text();
+  let data;
+  try{data=JSON.parse(raw)}catch(parseError){
+    const preview=raw.replace(/\\s+/g,' ').slice(0,180);
+    throw new Error('Expected JSON from '+response.url+' but received HTML/text (HTTP '+response.status+'). Preview: '+preview);
+  }
   if(!response.ok)throw new Error((data.error||'Proxy request failed')+(data.details?' — '+data.details.join('; '):''));
   if(!Array.isArray(data.elements))throw new Error('The proxy returned an unexpected response.');
   const nodes=new Map(data.elements.filter(e=>e.type==='node'&&Number.isFinite(e.lat)&&Number.isFinite(e.lon)).map(n=>[n.id,n]));
