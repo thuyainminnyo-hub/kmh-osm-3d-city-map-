@@ -191,7 +191,7 @@ document.querySelector('#load').addEventListener('click',async()=>{
       ctx.fillText(displayName,256,48,460);
       const texture=new THREE.CanvasTexture(labelCanvas);texture.colorSpace=THREE.SRGBColorSpace;
       const label=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false}));
-      label.position.set(mid.x,5,mid.z);label.scale.set(Math.max(18,Math.min(44,displayName.length*1.15)),Math.max(3.8,Math.min(6.5,displayName.length*.17)),1);
+      label.position.set(mid.x,10,mid.z);label.scale.set(Math.max(52,Math.min(100,displayName.length*2.4)),Math.max(10,Math.min(18,displayName.length*.42)),1);
       label.renderOrder=5;label.userData.kmhKind='road-label';root.add(label);roadLabels++;
     }
     roads++;
@@ -201,7 +201,7 @@ document.querySelector('#load').addEventListener('click',async()=>{
   applyStyle();
   const size=Math.max((east-west)*scaleX,(north-south)*scaleZ);window._kmhSize=size;fitCamera(size);
   document.querySelector('#counts').textContent='Buildings '+buildings+' · Roads '+roads;empty.style.display='none';
-  setStatus(usedCache?'Cached OSM scene loaded':'3D scene built',usedCache?'Live OSM servers were unavailable. Showing previously saved real OSM data for this exact area ('+cacheAgeHours+' hours old). Rendered '+buildings+' buildings and '+roads+' road segments.':'Received '+data.elements.length+' OSM elements. Rendered '+buildings+' buildings and '+roads+' road segments. A successful response is cached on this device for future server outages.');
+  setStatus(usedCache?'Cached OSM scene loaded':'3D scene built',usedCache?'Live OSM servers were unavailable. Showing previously saved real OSM data for this exact area ('+cacheAgeHours+' hours old). Rendered '+buildings+' buildings, '+roads+' road ways, and '+roadLabels+' street labels.':'Received '+data.elements.length+' OSM elements. Rendered '+buildings+' buildings, '+roads+' road ways, and '+roadLabels+' street labels. A successful response is cached on this device for future server outages.');
  }catch(err){const reason=err.message||'Unknown error.';document.querySelector('#demo').click();setStatus('OSM unavailable · Demo fallback','Live OpenStreetMap request failed: '+reason+' Showing synthetic demo buildings and roads instead; these are not real OSM data. You can retry the OSM button later.')}finally{loadBtn.disabled=false}
 });
 </script></body></html>
