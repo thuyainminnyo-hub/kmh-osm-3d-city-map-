@@ -43,11 +43,13 @@ exports.handler = async (event) => {
   const query = `[out:json][timeout:15];(way["building"](${bbox});way["highway"](${bbox}););out geom qt;`;
   const errors = [];
   const timeoutMs = 8000;
+  const controllers = [];
 
   // Query mirrors in parallel so one slow public endpoint does not consume
   // the time needed to try the others within a serverless function.
   const attempts = OVERPASS_ENDPOINTS.map(async (endpoint) => {
     const controller = new AbortController();
+    controllers.push(controller);
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(endpoint, {
@@ -82,6 +84,9 @@ exports.handler = async (event) => {
 
   try {
     const data = await Promise.any(attempts);
+    // Stop slower mirrors as soon as one valid response wins. This avoids
+    // leaving unnecessary outbound requests running after the function can respond.
+    controllers.forEach((controller) => controller.abort());
     return json(200, data);
   } catch {
     return json(502, {
