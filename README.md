@@ -50,3 +50,8 @@ The function returns Overpass JSON; the browser frontend converts the returned d
 ## Development principle
 
 While Netlify production deploys are paused, continue reviewing and improving the source on GitHub without repeatedly attempting production deploys. Batch changes and run the verification checklist after credits return.
+
+
+### Recent source-side reliability improvement
+
+The Netlify OSM proxy now aborts slower Overpass mirror requests after the first valid response succeeds, reducing unnecessary outbound work. This change is in GitHub source only until a production deploy is successfully published; it has not yet been verified on the live site.
