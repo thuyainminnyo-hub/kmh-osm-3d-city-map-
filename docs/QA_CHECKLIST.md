@@ -51,6 +51,7 @@ Use this checklist after a source change and again after a successful production
 - [ ] Verify an oversized box returns HTTP 413.
 - [ ] Verify non-GET requests return HTTP 405.
 - [ ] If all Overpass mirrors fail, verify the proxy returns HTTP 502 with a readable error.
+- [ ] Confirm the proxy aborts slower mirror requests after the first valid response wins.
 - [ ] Do not treat a temporary Overpass outage as proof the frontend is broken.
 
 ## G. Release record
@@ -72,7 +73,7 @@ Record after testing:
 
 ## Current known deployment state (2026-10-12)
 
-- Latest verified source update at the time of this record: `874c3aefdbc80b346f01f1e21ad069818e07c00e` (road geometry batching for mobile performance).
+- Latest source updates include `874c3aefdbc80b346f01f1e21ad069818e07c00e` (road geometry batching) and `3d2ebe19c8178871fd78c382e3e606d0cfcee3c3` (abort unused Overpass requests after a successful response).
 - Netlify skipped that deploy because account credits were exhausted.
 - Production remained on `b18d9a26d2ffbff5158af8156df7a76ba40c5cd8`.
 - The latest street-label size and label-count status update must be verified after credits resume.
