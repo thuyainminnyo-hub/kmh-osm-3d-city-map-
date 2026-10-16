@@ -158,6 +158,22 @@ document.querySelector('#load').addEventListener('click',async()=>{
   if(!ways.length)throw new Error('No building or road ways were returned. Try another nearby bounding box.');
   clearRoot();let buildings=0,roads=0,roadLabels=0;const latMid=(south+north)/2,scaleX=111320*Math.cos(latMid*Math.PI/180),scaleZ=111320;
   const xy=n=>({x:(n.lon-(west+east)/2)*scaleX,z:-((n.lat-(south+north)/2)*scaleZ)});
+  // Clip every road segment to the requested geographic bounding box before projecting it.
+  // This prevents long OSM ways from drawing outside the selected sample area.
+  function clipRoadSegment(a,b){
+    let x0=a.lon,y0=a.lat,x1=b.lon,y1=b.lat;
+    const dx=x1-x0,dy=y1-y0;let t0=0,t1=1;
+    const p=[-dx,dx,-dy,dy],q=[x0-west,east-x0,y0-south,north-y0];
+    for(let i=0;i<4;i++){
+      if(Math.abs(p[i])<1e-12){if(q[i]<0)return null;continue;}
+      const r=q[i]/p[i];
+      if(p[i]<0){if(r>t1)return null;if(r>t0)t0=r;}
+      else{if(r<t0)return null;if(r<t1)t1=r;}
+    }
+    const start={lon:x0+t0*dx,lat:y0+t0*dy};
+    const end={lon:x0+t1*dx,lat:y0+t1*dy};
+    return [start,end];
+  }
   const buildingMat=new THREE.MeshStandardMaterial({color:'#69bcae',roughness:.8,metalness:.05});
   const roadMat=new THREE.MeshStandardMaterial({color:'#5e6670',roughness:.98,metalness:0});
   const outlineMat=new THREE.LineBasicMaterial({color:'#c7fff2',transparent:true,opacity:.45});
@@ -173,7 +189,8 @@ document.querySelector('#load').addEventListener('click',async()=>{
     // Render OSM roads as real-width surface strips; thin WebGL lines are nearly invisible on mobile.
     const highway=String(tags.highway),roadWidth=({motorway:10,trunk:9,primary:8,secondary:7,tertiary:6,unclassified:4.5,residential:4.5,living_street:4,service:2.8,track:2.5,path:1.6,footway:1.5,cycleway:2.2})[highway]||4;
     for(let i=0;i<pts.length-1;i++){
-      const a=xy(pts[i]),b=xy(pts[i+1]),dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz);
+      const clipped=clipRoadSegment(pts[i],pts[i+1]);if(!clipped)continue;
+      const a=xy(clipped[0]),b=xy(clipped[1]),dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz);
       if(len<0.15)continue;
       const segmentGeometry=new THREE.BoxGeometry(len,0.24,roadWidth);
       const transform=new THREE.Matrix4();
@@ -187,7 +204,9 @@ document.querySelector('#load').addEventListener('click',async()=>{
     const roadName=String(tags.name||tags['name:en']||'').trim();
     const labelRoadTypes=['motorway','trunk','primary','secondary','tertiary','residential','unclassified'];
     if(roadName&&labelRoadTypes.includes(highway)&&roadLabels<24){
-      const mid=xy(pts[Math.floor(pts.length/2)]);
+      const labelPoint=pts[Math.floor(pts.length/2)];
+      if(labelPoint.lat<south||labelPoint.lat>north||labelPoint.lon<west||labelPoint.lon>east)continue;
+      const mid=xy(labelPoint);
       const labelCanvas=document.createElement('canvas');labelCanvas.width=512;labelCanvas.height=96;
       const ctx=labelCanvas.getContext('2d');
       ctx.fillStyle='rgba(8,18,30,0.86)';ctx.beginPath();ctx.roundRect(8,8,496,80,18);ctx.fill();
